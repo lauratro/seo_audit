@@ -1,0 +1,96 @@
+# apps/api — NestJS API
+
+Read the root `CLAUDE.md` first. This file adds API-specific rules.
+
+## Module layout
+
+```
+src/
+  config/       Zod-validated env config
+  health/       GET /api/health
+  fetcher/      SafeFetcher, IP policy, robots.txt
+  engine/       Check contract, the checks, thresholds, engine service
+    checks/     one file per check: title.check.ts, h1.check.ts, ...
+  audits/       controller, service, DTOs; cache lookup; persistence
+  pagespeed/    PageSpeed Insights client (phase 2)
+  advisor/      Gemini AI advisor (phase 3)
+  prisma/       PrismaService
+test/
+  fixtures/<checkId>/pass.html | warning.html | fail.html
+```
+
+All routes are under the global prefix `/api`.
+
+## Check contract
+
+Every check implements the same interface (`CheckId` and `CheckStatus` come from `@seo-audit/shared`):
+
+```ts
+export interface CheckContext {
+  requestedUrl: URL;
+  finalUrl: URL;          // after redirects
+  httpStatus: number;
+  headers: Record<string, string>;
+  html: string;
+  $: CheerioAPI;          // parsed once by the engine, shared by all checks
+}
+
+export interface CheckResult {
+  checkId: CheckId;
+  status: CheckStatus;    // PASS | WARNING | FAIL | INFO
+  measured: Record<string, unknown>;  // exact measured values, e.g. { length: 78 }
+  message: string;        // short, factual, English
+}
+
+export interface Check {
+  id: CheckId;
+  run(ctx: CheckContext): CheckResult | Promise<CheckResult>;
+}
+```
+
+Rules:
+- Checks are **pure** functions of the context: no network, no DB, no clock. The only exception is `broken_links`, which receives an injected `LinkChecker` so tests can replace it.
+- All thresholds live in `engine/thresholds.ts`, each with a comment naming its source (e.g. Google Search Central). No magic numbers in check files.
+- One check throwing must not break the audit: the engine catches it, logs it, and records that the check could not run.
+- Each check has tests for its PASS, WARNING and FAIL (or INFO) cases using fixtures in `test/fixtures/<checkId>/`, plus edge cases (empty element, whitespace only, multiple elements).
+
+## SafeFetcher (security-critical)
+
+Every outbound request to a user-supplied URL — the page, each redirect hop, robots.txt, broken-link HEAD requests — goes through `SafeFetcher`.
+
+- Only `http:` and `https:`. Reject URLs with credentials (`user:pass@`).
+- Resolve DNS and reject non-public addresses: private, loopback, link-local (incl. `169.254.169.254`), CGNAT `100.64.0.0/10`, unspecified, multicast, broadcast, IPv6 ULA `fc00::/7`, `fe80::/10`, `::1`, and IPv4-mapped IPv6 addresses pointing to any of these. Use `ipaddr.js` and allow only the `unicast` range instead of a hand-written deny list.
+- **Validate the IP actually used for the connection**, not a separate earlier lookup (prevents DNS rebinding). With undici, do it in a custom `connect`/`lookup` on the dispatcher.
+- Redirects are followed manually (`redirect: 'manual'`), max 5; every `Location` is resolved against the current URL and fully re-validated.
+- 10 s total timeout (`AbortSignal.timeout`). 5 MB body limit enforced while streaming — never trust `Content-Length`.
+- The page fetch accepts only HTML content types.
+- User-Agent `SEOAuditBot/0.1 (+<project url>)` on every request.
+- Typed errors (`BlockedUrlError`, `FetchTimeoutError`, `ResponseTooLargeError`, ...) mapped to HTTP 400 with a machine-readable code by an exception filter. Never leak internal IPs or stack traces.
+
+Testability: the IP policy is a pure function with table-driven tests. Resolver and dispatcher are injected, so fetcher tests use undici `MockAgent` or a fake resolver. (A local test server on 127.0.0.1 would itself be blocked — which is correct.)
+
+## Responsible crawling
+
+- Check robots.txt (via SafeFetcher, parsed with `robots-parser`) for the requested page before fetching it. Disallowed → audit rejected with a clear message. robots.txt 404 → proceed.
+- `broken_links`: HEAD requests (GET only on 405), max 50 links per audit, concurrency 5, same SafeFetcher rules.
+- `@nestjs/throttler` on `POST /api/audits`, per IP.
+
+## Audits API
+
+- `POST /api/audits` `{ url }` → 201 new · 200 cached (same `normalizedUrl` within 24 h) · 400 invalid/blocked · 429 rate limited
+- `GET /api/audits/:id` → audit + findings + recommendations · 404
+- `GET /api/audits?domain=example.com` → last 10 audits for the domain
+- `GET /api/health` → 200
+
+The audit runs synchronously inside the POST request in the MVP. `normalizeUrl` lives in `packages/shared` with its own tests: lowercase scheme and host, drop default port and fragment, keep path and query.
+
+## External services (phases 2–3)
+
+- PageSpeed and Gemini are **optional enrichments**: if one fails or times out, the audit is still saved with engine findings and the response says what is missing.
+- PageSpeed: mobile strategy; store Lighthouse score, LCP, INP, CLS. Missing field data is `null`, never `0`.
+- Gemini: called **once** per audit. Input = only WARNING/FAIL findings + performance data, never HTML. Output validated with `AdvisorOutputSchema` (Zod). Recommendations whose `checkId` is not among this audit's findings are dropped and logged. If validation fails, save the audit without recommendations and flag it. Store the model version on each recommendation.
+- In tests, PageSpeed and Gemini clients are always mocked.
+
+## Database
+
+Prisma schema follows the draft in `docs/spec.md` (Audit, Finding, Recommendation). Schema changes always go through `prisma migrate dev --name <change>`; never edit applied migrations.
