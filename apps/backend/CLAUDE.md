@@ -1,4 +1,4 @@
-# apps/api — NestJS API
+# apps/backend — NestJS API
 
 Read the root `CLAUDE.md` first. This file adds API-specific rules.
 
@@ -16,8 +16,17 @@ src/
   advisor/      Gemini AI advisor (phase 3)
   prisma/       PrismaService
 test/
+  unit/         mirrors src/, e.g. test/unit/fetcher/ip-policy.spec.ts
+  e2e/          HTTP tests with Supertest, e.g. test/e2e/health.e2e.spec.ts
   fixtures/<checkId>/pass.html | warning.html | fail.html
 ```
+
+Folder conventions inside a feature:
+- NestJS classes go in subfolders by role: `module/<feature>.module.ts`, `controller/<feature>.controller.ts`, `service/<name>.service.ts`. Example: `health/module/health.module.ts`, `fetcher/service/safe-fetcher.service.ts`.
+- Plain TypeScript functions and types stay flat in the feature folder: `fetcher/ip-policy.ts`, `engine/thresholds.ts`, `engine/checks/title.check.ts`.
+- Create a folder or a service only when it has real content. No empty folders, no pass-through services.
+- Tests live outside `src/`. `tsconfig.build.json` compiles only `src/`, `tsconfig.json` covers `src/` and `test/` for typecheck.
+- ESM: relative imports end in `.js` (`import { HealthModule } from './health/module/health.module.js'`).
 
 All routes are under the global prefix `/api`.
 

@@ -1,4 +1,4 @@
-# apps/web — Next.js frontend
+# apps/frontend — Next.js frontend
 
 Read the root `CLAUDE.md` first. This file adds frontend-specific rules.
 

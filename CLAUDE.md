@@ -7,7 +7,7 @@ Portfolio project for a Full Stack Developer role. Hard deadline for the MVP (ph
 - Full specification (Italian): `docs/spec.md` — source of truth for scope, checks, thresholds, data model, API.
 - Current plan and task list: `docs/implementation-plan.md`
 - Architecture decisions: `docs/adr/` — follow them; do not contradict an ADR without asking.
-- Package-specific rules: `apps/api/CLAUDE.md`, `apps/web/CLAUDE.md`
+- Package-specific rules: `apps/backend/CLAUDE.md`, `apps/frontend/CLAUDE.md`
 
 ## Non-negotiable principles
 
@@ -21,10 +21,10 @@ Portfolio project for a Full Stack Developer role. Hard deadline for the MVP (ph
 
 ```
 apps/
-  api/        NestJS API: engine, fetcher, PageSpeed client, AI advisor, Prisma
-  web/        Next.js (App Router) frontend, server-rendered report
+  backend/    NestJS API: engine, fetcher, PageSpeed client, AI advisor, Prisma (@seo-audit/backend)
+  frontend/   Next.js (App Router) frontend, server-rendered report
 packages/
-  shared/     Types and Zod schemas shared by api and web (@seo-audit/shared)
+  shared/     Types and Zod schemas shared by backend and frontend (@seo-audit/shared)
 docs/
   spec.md
   implementation-plan.md
@@ -35,7 +35,8 @@ docker-compose.yml   PostgreSQL for local development
 
 ## Stack
 
-- npm workspaces monorepo, TypeScript (strict) everywhere, Node 24 LTS
+- npm workspaces monorepo, TypeScript 6.x (strict) everywhere, Node 24 LTS (`.nvmrc`)
+- Backend is an ES module package (NestJS 12 is ESM-only): relative imports use the `.js` extension
 - API: NestJS, cheerio (no headless browser), Prisma + PostgreSQL, Zod, undici, `@nestjs/throttler`
 - Web: Next.js App Router, Tailwind CSS, server components by default
 - AI: Google Gen AI SDK (Gemini), structured JSON output
@@ -51,12 +52,12 @@ Run from the repo root. Keep this section updated when scripts change.
 ```bash
 npm install
 docker compose up -d                 # PostgreSQL on localhost:5432
-npm run dev                          # api + web in parallel
+npm run dev                          # backend + frontend in parallel
 npm run lint
 npm run typecheck
 npm test                             # all packages
-npm test -w apps/api -- <pattern>    # single test file / pattern
-npm exec -w apps/api -- prisma migrate dev
+npm test -w apps/backend -- <pattern>  # single test file / pattern
+npm exec -w apps/backend -- prisma migrate dev
 ```
 
 ## Conventions
@@ -67,7 +68,7 @@ npm exec -w apps/api -- prisma migrate dev
 - **Shared contract:** API response types and the `CheckId` / `CheckStatus` / `Priority` enums live in `packages/shared`. Both apps import from `@seo-audit/shared`; never duplicate these types.
 - **Check IDs are stable and snake_case**, exactly as in the spec: `title`, `meta_description`, `h1`, `heading_order`, `canonical`, `meta_robots`, `img_alt`, `structured_data`, `broken_links`, `initial_render`. Never rename one.
 - **Config:** read env vars only through a validated config module. `.env.example` lists every variable; real `.env` files are never committed.
-- **Commits:** Conventional Commits (`feat(api): add h1 check`), one logical change per commit.
+- **Commits:** Conventional Commits (`feat(backend): add h1 check`), one logical change per commit.
 - **Dependencies:** don't add one without stating why in your summary. Prefer what is listed above.
 
 ## How to work on a task

@@ -10,7 +10,7 @@ Every week ends with something you can show in an interview.
 
 Demo at the end: CI is green, `POST /api/audits` returns the title/description/h1 findings for a real URL, and localhost is rejected.
 
-- [ ] **1.1 Monorepo skeleton** — npm workspaces with `apps/api` (NestJS), `apps/web` (Next.js), `packages/shared`; root scripts `dev`, `lint`, `typecheck`, `test`; strict TS base config; ESLint + Prettier.
+- [ ] **1.1 Monorepo skeleton** — npm workspaces with `apps/backend` (NestJS), `apps/frontend` (Next.js), `packages/shared`; root scripts `dev`, `lint`, `typecheck`, `test`; strict TS base config; ESLint + Prettier.
   *Done when:* `npm install && npm run lint && npm run typecheck && npm test` pass on an empty project.
 - [ ] **1.2 Local database** — `docker-compose.yml` with PostgreSQL, `.env.example`, Zod-validated config module in the API, `GET /api/health`.
   *Done when:* `docker compose up -d && npm run dev` → `/api/health` returns 200.
@@ -19,15 +19,15 @@ Demo at the end: CI is green, `POST /api/audits` returns the title/description/h
 - [ ] **1.4 ADR 0001** — monorepo and stack choice (context, decision, alternatives). *You write it; Claude Code can review.*
 - [ ] **1.5 Shared package** — `CheckId`, `CheckStatus`, `Priority`, `normalizeUrl()` with tests.
   *Done when:* both apps import from `@seo-audit/shared`; `normalizeUrl` has ≥ 8 test cases.
-- [ ] **1.6 ADR 0002 — SafeFetcher** — decide timeouts (whole-operation deadline), error → HTTP status mapping, allowed ports. *You write it, starting from the proposals in `apps/api/CLAUDE.md`.*
+- [ ] **1.6 ADR 0002 — SafeFetcher** — decide timeouts (whole-operation deadline), error → HTTP status mapping, allowed ports. *You write it, starting from the proposals in `apps/backend/CLAUDE.md`.*
 
-SafeFetcher is split into three tasks (rules in `apps/api/CLAUDE.md` → "SafeFetcher"):
+SafeFetcher is split into three tasks (rules in `apps/backend/CLAUDE.md` → "SafeFetcher"):
 
 - [ ] **1.7 IP policy** — `fetcher/ip-policy.ts`, pure function `isAllowedAddress(ip)`; explicit range list with RFC comments; IPv4-mapped normalisation.
   *Done when:* table-driven tests cover every blocked range, public IPv4/IPv6, IPv4-mapped forms and unparseable input.
 - [ ] **1.8 URL policy** — `fetcher/url-policy.ts`: scheme, credentials, default ports only, `localhost`/single-label hosts, IP literals checked with ip-policy; `fetcher.errors.ts` with the first typed errors.
   *Done when:* table-driven tests pass, including `http://127.0.0.1`, `http://[::ffff:7f00:1]`, `http://169.254.169.254`.
-- [ ] **1.9 Safe HTTP client** — `safe-fetcher.service.ts` + `fetcher.module.ts`: undici Agent with checked `lookup`, manual redirects (max 5, each re-checked), whole-operation deadline, 5 MB decoded-size limit, HTML only, User-Agent, 4xx/5xx returned as results; exception filter for the typed errors.
+- [ ] **1.9 Safe HTTP client** — `fetcher/service/safe-fetcher.service.ts` + `fetcher/module/fetcher.module.ts`: undici Agent with checked `lookup`, manual redirects (max 5, each re-checked), whole-operation deadline, 5 MB decoded-size limit, HTML only, User-Agent, 4xx/5xx returned as results; exception filter for the typed errors.
   *Done when:* tests with a real undici Agent and a fake resolver cover private address, DNS rebinding, mixed addresses, redirect to metadata/localhost, 6 redirects, > 5 MB (plain and gzip), slow body; a test proves the module wires the strict policy.
 - [ ] **1.10 Engine + first checks** — `Check` contract, engine service that parses once with cheerio; checks `title`, `meta_description`, `h1` with pass/warning/fail fixtures; `thresholds.ts` with sources.
   *Open decision before this task:* how to represent a check that could not run without confusing it with a real SEO failure.
