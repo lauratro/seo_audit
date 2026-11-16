@@ -1,17 +1,10 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "es2024",
-    "module": "nodenext",
-    "moduleResolution": "nodenext",
     "types": ["node"],
     "rootDir": ".",
     "outDir": "dist",
-    "sourceMap": true,
-
-    "strict": true,
-    "forceConsistentCasingInFileNames": true,
     "esModuleInterop": true,
-    "skipLibCheck": true,
 
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
