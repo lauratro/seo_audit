@@ -53,7 +53,8 @@ Run from the repo root. Keep this section updated when scripts change.
 npm install
 docker compose up -d                 # PostgreSQL on localhost:5432
 npm run dev                          # backend + frontend in parallel
-npm run lint
+npm run lint                         # ESLint (type-aware) + Prettier check
+npm run format                       # Prettier: rewrite files in place
 npm run typecheck
 npm test                             # all packages
 npm test -w apps/backend -- <pattern>  # single test file / pattern

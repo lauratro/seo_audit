@@ -1,3 +1,5 @@
+import type { Server } from 'node:http';
+
 import type { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import request from 'supertest';
@@ -7,7 +9,8 @@ import { AppModule } from '../../src/app.module.js';
 import { setupApp } from '../../src/setup-app.js';
 
 describe('GET /api/health', () => {
-  let app: INestApplication;
+  // Typing the server avoids getHttpServer() returning `any`.
+  let app: INestApplication<Server>;
 
   beforeAll(async () => {
     const moduleRef = await Test.createTestingModule({
