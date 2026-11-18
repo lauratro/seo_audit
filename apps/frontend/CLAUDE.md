@@ -12,6 +12,7 @@ Read the root `CLAUDE.md` first. This file adds frontend-specific rules.
 
 ## Rules
 
+- **Imports have no `.js` extension** (unlike the backend): Next.js bundles the app, so `tsconfig.json` uses `moduleResolution: "bundler"`. Example: `import { api } from '../lib/api'`.
 - **Server components by default.** Use `"use client"` only for interactivity (the URL form, toggles). The report must be fully present in the initial HTML — the tool's own `initial_render` check has to pass on its own pages.
 - Data comes from the API through one typed client in `src/lib/api.ts`; response types come from `@seo-audit/shared`. Never call `fetch` to the API from scattered components.
 - API base URL from a validated env variable; never hard-code it.

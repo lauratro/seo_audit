@@ -1,13 +1,15 @@
 // Single ESLint config for the whole monorepo (run once from the root).
 // Formatting is Prettier's job; ESLint only reports code-quality problems.
 import js from '@eslint/js';
+import nextPlugin from '@next/eslint-plugin-next';
 import prettier from 'eslint-config-prettier/flat';
+import reactHooks from 'eslint-plugin-react-hooks';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import tseslint from 'typescript-eslint';
 
 export default defineConfig(
   // Build output and generated files are never linted.
-  globalIgnores(['**/dist/', '**/coverage/', '**/.next/']),
+  globalIgnores(['**/dist/', '**/coverage/', '**/.next/', '**/next-env.d.ts']),
 
   js.configs.recommended,
 
@@ -30,9 +32,17 @@ export default defineConfig(
     extends: [tseslint.configs.disableTypeChecked],
   },
 
-  // Frontend-only rules go here once apps/frontend exists, scoped with
-  // `files: ['apps/frontend/**']` (e.g. eslint-config-next). They are added
-  // on top of the shared rules above, not copied.
+  // Frontend-only rules, added on top of the shared rules above (not copied).
+  // eslint-config-next is not used: it bundles plugins that do not support
+  // ESLint 10 yet, so only the two compatible plugins are enabled directly.
+  {
+    files: ['apps/frontend/**/*.{ts,tsx}'],
+    extends: [
+      nextPlugin.configs['core-web-vitals'],
+      reactHooks.configs.flat.recommended,
+    ],
+    settings: { next: { rootDir: 'apps/frontend/' } },
+  },
 
   // Must stay last: turns off any rule that would conflict with Prettier.
   prettier,

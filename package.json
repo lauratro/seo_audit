@@ -11,16 +11,19 @@
     "prelint": "npm run build -w packages/shared",
     "pretypecheck": "npm run build -w packages/shared",
     "pretest": "npm run build -w packages/shared",
-    "dev": "npm run dev -w apps/backend",
-    "lint": "eslint . && prettier --check .",
+    "dev": "concurrently --names backend,frontend --kill-others \"npm run dev -w apps/backend\" \"npm run dev -w apps/frontend\"",
+    "lint": "eslint . --max-warnings 0 && prettier --check .",
     "format": "prettier --write .",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "test": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@next/eslint-plugin-next": "^16.4.6",
+    "concurrently": "^10.0.7",
     "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react-hooks": "^7.1.1",
     "prettier": "^3.10.1",
     "typescript-eslint": "^8.73.0"
   }

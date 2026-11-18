@@ -52,10 +52,11 @@ Run from the repo root. Keep this section updated when scripts change.
 ```bash
 npm install
 docker compose up -d                 # PostgreSQL on localhost:5432
-npm run dev                          # backend + frontend in parallel
+npm run dev                          # backend (localhost:3001/api) + frontend (localhost:3000) via concurrently
+npm run build -w apps/frontend       # Next.js production build
 npm run lint                         # ESLint (type-aware) + Prettier check
 npm run format                       # Prettier: rewrite files in place
-npm run typecheck
+npm run typecheck                    # all packages (frontend runs `next typegen` first)
 npm test                             # all packages
 npm test -w apps/backend -- <pattern>  # single test file / pattern
 npm exec -w apps/backend -- prisma migrate dev
