@@ -4,7 +4,7 @@ Single-page technical SEO audit. A user submits a URL → the **audit engine** r
 
 Portfolio project for a Full Stack Developer role. Hard deadline for the MVP (phases 1–3): **29 Nov 2026**.
 
-- Full specification (Italian): `docs/spec.md` — source of truth for scope, checks, thresholds, data model, API.
+- Project documentation: this file, `apps/backend/CLAUDE.md`, `apps/frontend/CLAUDE.md`, `docs/implementation-plan.md` and the ADRs. There is no separate specification: anything these files don't cover is an open decision (see "How to work on a task").
 - Current plan and task list: `docs/implementation-plan.md`
 - Architecture decisions: `docs/adr/` — follow them; do not contradict an ADR without asking.
 - Package-specific rules: `apps/backend/CLAUDE.md`, `apps/frontend/CLAUDE.md`
@@ -26,7 +26,6 @@ apps/
 packages/
   shared/     Types and Zod schemas shared by backend and frontend (@seo-audit/shared)
 docs/
-  spec.md
   implementation-plan.md
   adr/        NNNN-short-title.md, one decision per file
 .github/workflows/ci.yml
@@ -51,7 +50,8 @@ Run from the repo root. Keep this section updated when scripts change.
 
 ```bash
 npm install
-docker compose up -d                 # PostgreSQL on localhost:5432
+cp .env.example .env                 # once; .env is git-ignored
+docker compose up -d                 # PostgreSQL on localhost:5433 (POSTGRES_PORT in .env)
 npm run dev                          # backend (localhost:3001/api) + frontend (localhost:3000) via concurrently
 npm run build -w apps/frontend       # Next.js production build
 npm run lint                         # ESLint (type-aware) + Prettier check
@@ -68,7 +68,7 @@ npm exec -w apps/backend -- prisma migrate dev
 - **TypeScript:** `strict: true`, no `any`. External or unknown data is `unknown` until parsed with Zod.
 - **Zod at every boundary:** API request bodies, PageSpeed responses, Gemini responses, env variables.
 - **Shared contract:** API response types and the `CheckId` / `CheckStatus` / `Priority` enums live in `packages/shared`. Both apps import from `@seo-audit/shared`; never duplicate these types.
-- **Check IDs are stable and snake_case**, exactly as in the spec: `title`, `meta_description`, `h1`, `heading_order`, `canonical`, `meta_robots`, `img_alt`, `structured_data`, `broken_links`, `initial_render`. Never rename one.
+- **Check IDs are stable and snake_case**, exactly as listed here: `title`, `meta_description`, `h1`, `heading_order`, `canonical`, `meta_robots`, `img_alt`, `structured_data`, `broken_links`, `initial_render`. Never rename one.
 - **Config:** read env vars only through a validated config module. `.env.example` lists every variable; real `.env` files are never committed.
 - **Commits:** Conventional Commits (`feat(backend): add h1 check`), one logical change per commit.
 - **Dependencies:** don't add one without stating why in your summary. Prefer what is listed above.
@@ -76,12 +76,12 @@ npm exec -w apps/backend -- prisma migrate dev
 ## How to work on a task
 
 1. Take one task from `docs/implementation-plan.md`. Restate its acceptance criteria before writing code.
-2. If the task needs a decision not covered by the spec or an ADR (library, data shape, threshold, folder structure), **propose 2–3 options with trade-offs and wait**. Don't decide silently.
+2. If the task needs a decision not covered by the project docs or an ADR (library, data shape, threshold, folder structure), **propose 2–3 options with trade-offs and wait**. Don't decide silently.
 3. For checks and security code: write fixtures and failing tests first, then implement.
 4. Before saying a task is done, run `npm run lint`, `npm run typecheck` and `npm test`, and report the results.
 5. End with a short summary: what changed, which files, anything the author should review carefully or explain in an interview.
 
-Don't edit `docs/spec.md` or existing ADRs unless asked. Never touch `.env` files or print secrets.
+Don't edit existing ADRs unless asked. Never touch `.env` files or print secrets.
 
 ## Out of scope before 29 Nov (backlog only)
 

@@ -1,0 +1,26 @@
+# Local development database only. Values come from the root .env file
+# (copy .env.example); production uses AWS RDS (task 3.7).
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+    ports:
+      # Bound to loopback only: not reachable from the local network.
+      - '127.0.0.1:${POSTGRES_PORT:-5433}:5432'
+    volumes:
+      # PostgreSQL 18 images set PGDATA=/var/lib/postgresql/18/docker and
+      # declare /var/lib/postgresql as the volume, so mount the parent
+      # directory (not /var/lib/postgresql/data as for versions <= 17).
+      - db-data:/var/lib/postgresql
+    healthcheck:
+      test:
+        ['CMD-SHELL', 'pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  db-data:

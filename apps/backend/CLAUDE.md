@@ -102,4 +102,4 @@ The audit runs synchronously inside the POST request in the MVP. `normalizeUrl` 
 
 ## Database
 
-Prisma schema follows the draft in `docs/spec.md` (Audit, Finding, Recommendation). Schema changes always go through `prisma migrate dev --name <change>`; never edit applied migrations.
+Prisma schema models Audit, Finding, Recommendation; the fields are an open decision for task 2.6. Schema changes always go through `prisma migrate dev --name <change>`; never edit applied migrations.

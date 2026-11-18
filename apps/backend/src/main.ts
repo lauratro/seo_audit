@@ -1,11 +1,11 @@
 import { NestFactory } from '@nestjs/core';
 
 import { AppModule } from './app.module.js';
+import { APP_CONFIG, type AppConfig } from './config/config.js';
 import { setupApp } from './setup-app.js';
-
-// Hard-coded until the Zod-validated config module exists (task 1.2).
-const PORT = 3001;
 
 const app = await NestFactory.create(AppModule);
 setupApp(app);
-await app.listen(PORT);
+
+const config = app.get<AppConfig>(APP_CONFIG);
+await app.listen(config.port);

@@ -44,9 +44,10 @@ Demo: a full audit with 10 findings saved in PostgreSQL, retrievable by ID, cach
 - [ ] **2.3 Check** `initial_render` — visible text ratio after removing scripts/styles; threshold documented; fixture of a React "app shell".
 - [ ] **2.4 Check** `broken_links` — injected `LinkChecker`, HEAD (GET on 405), max 50 links, concurrency 5, via SafeFetcher.
 - [ ] **2.5 robots.txt** — `fetcher/robots-policy.ts`, fetched through `SafeFetcher`; respected for the requested page; tests for allowed, disallowed, missing, unreachable.
-- [ ] **2.6 Prisma** — schema from the spec, first migration, `PrismaService`.
+- [ ] **2.6 Prisma** — schema for Audit, Finding, Recommendation, first migration, `PrismaService`.
+  *Open decision before this task:* the field list (start from `apps/backend/CLAUDE.md`).
 - [ ] **2.7 Audits endpoints** — `POST` (201 / 200 cache / 400 / 429), `GET /:id`, `GET ?domain=`; Supertest e2e tests with mocked fetcher.
-- [ ] **2.8 Phase 1 check** — go through the phase 1 acceptance criteria in `docs/spec.md` and tick them.
+- [ ] **2.8 Phase 1 check** — go through the week 1 and week 2 demos and every *Done when* in weeks 1–2 of this plan, and tick them.
 
 ## Week 3 · 16–22 Nov · 13–18 h — Dashboard, performance, deploy (phase 2)
 
@@ -81,4 +82,4 @@ Multi-page crawler · cross-page duplicates · job queue · PDF export · IT/DE 
 
 ## How to give Claude Code a task
 
-> Read `CLAUDE.md` and `docs/implementation-plan.md`. Implement task **1.7**. Restate the acceptance criteria, write the tests first, then the implementation. Stop and ask if you need a decision not covered by the spec or an ADR.
+> Read `CLAUDE.md` and `docs/implementation-plan.md`. Implement task **1.7**. Restate the acceptance criteria, write the tests first, then the implementation. Stop and ask if you need a decision not covered by the project docs or an ADR.
