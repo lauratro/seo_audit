@@ -18,7 +18,7 @@ src/
 test/
   unit/         mirrors src/, e.g. test/unit/fetcher/ip-policy.spec.ts
   e2e/          HTTP tests with Supertest, e.g. test/e2e/health.e2e.spec.ts
-  fixtures/<checkId>/pass.html | warning.html | fail.html
+  fixtures/<checkId>/pass.html | warn.html | fail.html | info.html
 ```
 
 Folder conventions inside a feature:
@@ -46,7 +46,7 @@ export interface CheckContext {
 
 export interface CheckResult {
   checkId: CheckId;
-  status: CheckStatus;    // PASS | WARNING | FAIL | INFO
+  status: CheckStatus;    // pass | warn | fail | info | not_checked | not_applicable
   measured: Record<string, unknown>;  // exact measured values, e.g. { length: 78 }
   message: string;        // short, factual, English
 }
@@ -57,11 +57,22 @@ export interface Check {
 }
 ```
 
+*Open decision for task 1.10:* one check module (e.g. `title.check.ts`) may produce several granular results (`title_presence`, `title_length`, `title_pixel_width`). The single `id` / single `CheckResult` shape above must be adapted before the first check is written.
+
+Status meanings (defined in `packages/shared/src/checks/check-status.ts`):
+- `pass` — the check passed · `warn` — a potential issue that needs attention, possibly intentional · `fail` — a problem was detected
+- `info` — a neutral observation, not an issue (e.g. no JSON-LD on the page)
+- `not_checked` — the check could not run or was not executed · `not_applicable` — the check does not apply (e.g. description length when there is no description)
+
 Rules:
 - Checks are **pure** functions of the context: no network, no DB, no clock. The only exception is `broken_links`, which receives an injected `LinkChecker` so tests can replace it.
 - All thresholds live in `engine/thresholds.ts`, each with a comment naming its source (e.g. Google Search Central). No magic numbers in check files.
-- One check throwing must not break the audit: the engine catches it, logs it, and records that the check could not run.
-- Each check has tests for its PASS, WARNING and FAIL (or INFO) cases using fixtures in `test/fixtures/<checkId>/`, plus edge cases (empty element, whitespace only, multiple elements).
+- One check throwing must not break the audit: the engine catches it, logs it, and records its results as `not_checked`.
+- Each check has tests for every status it can return (`pass`, `warn`, `fail`, `info`, `not_applicable`) using fixtures in `test/fixtures/<checkId>/`, plus edge cases (empty element, whitespace only, multiple elements).
+- A technical observation is not automatically an SEO issue: `noindex`, `nofollow` and a canonical pointing elsewhere can be intentional, so they are `warn` or `info`, never an automatic `fail`.
+- `structured_data_presence`: no JSON-LD → `info`. Syntax errors are `structured_data_syntax`'s job.
+- `initial_render` is a heuristic on the initial HTML response, not proof of what a browser or Google renders: low text alone is `warn`, never an automatic `fail`.
+- `broken_links` reports only confirmed unavailable links (e.g. 404, 410) as broken. Responses that allow no reliable conclusion (403, 429, 5xx, timeouts) are recorded separately as unverified; a 5xx is never described as permanently broken.
 
 ## SafeFetcher (security-critical)
 
@@ -91,13 +102,13 @@ Testability: the IP policy is a pure function with table-driven tests. Resolver 
 - `GET /api/audits?domain=example.com` → last 10 audits for the domain
 - `GET /api/health` → 200
 
-The audit runs synchronously inside the POST request in the MVP. `normalizeUrl` lives in `packages/shared` with its own tests: lowercase scheme and host, drop default port and fragment, keep path and query.
+The audit runs synchronously inside the POST request in the MVP. `normalizeUrl` lives in `packages/shared` with its own tests: trim, add `https://` when no scheme is given, http(s) only, lowercase scheme and host, drop default port, fragment and an empty `?`, keep path (case, trailing slash) and query as given; returns `null` when unparseable. It is not a security check — SafeFetcher's policies still apply.
 
 ## External services (phases 2–3)
 
 - PageSpeed and Gemini are **optional enrichments**: if one fails or times out, the audit is still saved with engine findings and the response says what is missing.
 - PageSpeed: mobile strategy; store Lighthouse score, LCP, INP, CLS. Missing field data is `null`, never `0`.
-- Gemini: called **once** per audit. Input = only WARNING/FAIL findings + performance data, never HTML. Output validated with `AdvisorOutputSchema` (Zod). Recommendations whose `checkId` is not among this audit's findings are dropped and logged. If validation fails, save the audit without recommendations and flag it. Store the model version on each recommendation.
+- Gemini: called **once** per audit. Input = only `warn`/`fail` findings + performance data, never HTML. Output validated with `AdvisorOutputSchema` (Zod). Recommendations whose `checkId` is not among this audit's findings are dropped and logged. If validation fails, save the audit without recommendations and flag it. Store the model version on each recommendation.
 - In tests, PageSpeed and Gemini clients are always mocked.
 
 ## Database

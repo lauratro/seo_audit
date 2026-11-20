@@ -59,6 +59,7 @@ npm run format                       # Prettier: rewrite files in place
 npm run typecheck                    # all packages (frontend runs `next typegen` first)
 npm test                             # all packages
 npm test -w apps/backend -- <pattern>  # single test file / pattern
+npm test -w packages/shared          # shared package only (normalizeUrl, CheckIds)
 npm exec -w apps/backend -- prisma migrate dev
 ```
 
@@ -68,7 +69,8 @@ npm exec -w apps/backend -- prisma migrate dev
 - **TypeScript:** `strict: true`, no `any`. External or unknown data is `unknown` until parsed with Zod.
 - **Zod at every boundary:** API request bodies, PageSpeed responses, Gemini responses, env variables.
 - **Shared contract:** API response types and the `CheckId` / `CheckStatus` / `Priority` enums live in `packages/shared`. Both apps import from `@seo-audit/shared`; never duplicate these types.
-- **Check IDs are stable and snake_case**, exactly as listed here: `title`, `meta_description`, `h1`, `heading_order`, `canonical`, `meta_robots`, `img_alt`, `structured_data`, `broken_links`, `initial_render`. Never rename one.
+- **Check IDs are granular, stable and snake_case.** One ID per measured property (e.g. `title_presence`, `title_length`). The catalog lives only in `packages/shared/src/checks/` (one file per category). Add an ID only when its check is implemented; never rename or remove one that is in use.
+- **Observation ≠ SEO issue.** Only `warn` and `fail` describe a potential issue; `info`, `not_checked` and `not_applicable` never count as failures. Directives such as `noindex`, `nofollow` or a canonical pointing elsewhere can be intentional.
 - **Config:** read env vars only through a validated config module. `.env.example` lists every variable; real `.env` files are never committed.
 - **Commits:** Conventional Commits (`feat(backend): add h1 check`), one logical change per commit.
 - **Dependencies:** don't add one without stating why in your summary. Prefer what is listed above.

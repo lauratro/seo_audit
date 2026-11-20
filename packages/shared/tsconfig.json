@@ -1,12 +1,15 @@
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
+    // DOM provides the URL type; the package is used by both apps.
+    "lib": ["es2024", "dom"],
     "types": [],
-    "rootDir": "src",
+    "rootDir": ".",
     "outDir": "dist",
 
     "declaration": true,
     "declarationMap": true
   },
-  "include": ["src"]
+  // Typecheck covers src and test; tsconfig.build.json compiles only src.
+  "include": ["src", "test"]
 }
