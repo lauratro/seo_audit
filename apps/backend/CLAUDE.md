@@ -76,18 +76,23 @@ Rules:
 
 ## SafeFetcher (security-critical)
 
-Every outbound request to a user-supplied URL — the page, each redirect hop, robots.txt, broken-link HEAD requests — goes through `SafeFetcher`.
+Every outbound request to a user-supplied URL — the page, each redirect hop, robots.txt, broken-link HEAD requests — goes through `SafeFetcher`. The full design and its reasons are in `docs/adr/0002-safe-fetcher.md`; the rules below are the summary.
 
-- Only `http:` and `https:`. Reject URLs with credentials (`user:pass@`).
-- Resolve DNS and reject non-public addresses: private, loopback, link-local (incl. `169.254.169.254`), CGNAT `100.64.0.0/10`, unspecified, multicast, broadcast, IPv6 ULA `fc00::/7`, `fe80::/10`, `::1`, and IPv4-mapped IPv6 addresses pointing to any of these. Use `ipaddr.js` and allow only the `unicast` range instead of a hand-written deny list.
-- **Validate the IP actually used for the connection**, not a separate earlier lookup (prevents DNS rebinding). With undici, do it in a custom `connect`/`lookup` on the dispatcher.
-- Redirects are followed manually (`redirect: 'manual'`), max 5; every `Location` is resolved against the current URL and fully re-validated.
-- 10 s total timeout (`AbortSignal.timeout`). 5 MB body limit enforced while streaming — never trust `Content-Length`.
-- The page fetch accepts only HTML content types.
+- Only `http:` and `https:`, and only the scheme's default port (`url.port === ''`). Reject URLs with credentials (`user:pass@`), and the hosts `localhost`, `*.localhost` and single-label names before any DNS lookup.
+- Resolve DNS and reject non-public addresses with the pure, **fail-closed** `isAllowedAddress(ip)`. `ipaddr.js` parses and matches addresses, but `range() === 'unicast'` alone is not trusted: the policy is an explicit range table in `ip-policy.ts` with RFC citations, built from the IANA IPv4/IPv6 Special-Purpose Address Registries (snapshot date recorded in the file). Every registry entry is blocked, whether or not it is marked "globally reachable".
+  - IPv4: allowed only if it is in **no** table range (private, loopback, link-local incl. `169.254.169.254`, CGNAT, `0.0.0.0/8`, documentation, benchmarking, multicast, reserved, broadcast, ...).
+  - IPv6: allowed only inside `2000::/3` **and** in no table range there (e.g. `2001::/23`, `2001:db8::/32`, `3fff::/20`); everything outside `2000::/3` is blocked. IPv4-mapped IPv6 is checked as IPv4; 6to4, Teredo and NAT64 are blocked.
+  - Only canonical text is accepted; non-canonical, zone-ID, bracketed or unparseable input is blocked.
+- **Validate the IP actually used for the connection**, not a separate earlier lookup (prevents DNS rebinding). With undici, do it in a custom `connect.lookup` on the `Agent`, resolving with `all: true` and rejecting if *any* address is blocked. IP literals in the URL skip `lookup`, so the URL policy checks them with the same IP policy.
+- Redirects are followed manually, max 5; every `Location` is resolved against the current URL and fully re-validated.
+- One whole-operation deadline (`AbortSignal.timeout`) covers DNS, connect, every hop and the body: 10 s for the page, shorter for robots.txt and link checks. Per-call options can only tighten limits (max 10 s, max 5 MB).
+- Body limit counted while streaming, **after decompression** (gzip, deflate, br): 5 MB for the page, 500 KiB for robots.txt. Never trust `Content-Length`. Unknown or stacked `Content-Encoding` is an error.
+- Only the final 2xx response of a page fetch must be `text/html`, checked from the headers before reading the body; a missing `Content-Type`, `application/xhtml+xml` and every other type are rejected. Redirect hops, non-2xx responses, robots.txt and link checks don't apply this rule.
+- Upstream 4xx/5xx are returned as results (status, headers, final URL, redirect chain), not thrown, whatever their Content-Type; for non-2xx the body is discarded.
 - User-Agent `SEOAuditBot/0.1 (+<project url>)` on every request.
-- Typed errors (`BlockedUrlError`, `FetchTimeoutError`, `ResponseTooLargeError`, ...) mapped to HTTP 400 with a machine-readable code by an exception filter. Never leak internal IPs or stack traces.
+- SafeFetcher throws typed errors (`BlockedUrlError`, `FetchTimeoutError`, `ResponseTooLargeError`, ...) and knows nothing about HTTP. An exception filter at the API boundary maps them (400 invalid/blocked · 422 not auditable · 502 unreachable · 504 timeout, see ADR 0002) to `{ statusCode, code, message }`, with error codes from `@seo-audit/shared`. Never leak internal IPs or stack traces.
 
-Testability: the IP policy is a pure function with table-driven tests. Resolver and dispatcher are injected, so fetcher tests use undici `MockAgent` or a fake resolver. (A local test server on 127.0.0.1 would itself be blocked — which is correct.)
+Testability: the IP and URL policies are pure functions with table-driven tests. Resolver and policy are injected: fetcher tests use a fake resolver with `.test` hostnames and a local server on `127.0.0.1`. A relaxed policy (loopback, any port) exists **only in test code**; `src/` exports none, no env variable (including `NODE_ENV`) or config can enable one, and a module test proves `FetcherModule` wires the strict policy. undici `MockAgent` bypasses `lookup`, so it is never used to test SSRF protection.
 
 ## Responsible crawling
 

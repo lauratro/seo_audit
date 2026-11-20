@@ -22,16 +22,17 @@ Demo at the end: CI is green, `POST /api/audits` returns the title/description/h
 - [ ] **1.5 Shared package** — `CheckId`, `CheckStatus`, `Priority`, `normalizeUrl()` with tests.
   *Done when:* both apps import from `@seo-audit/shared`; `normalizeUrl` has ≥ 8 test cases.
   *Pending:* the frontend integration is done in task 3.1 (URL form), with a real use rather than an artificial import.
-- [ ] **1.6 ADR 0002 — SafeFetcher** — decide timeouts (whole-operation deadline), error → HTTP status mapping, allowed ports. *You write it, starting from the proposals in `apps/backend/CLAUDE.md`.*
+- [x] **1.6 ADR 0002 — SafeFetcher** — decide timeouts (whole-operation deadline), error → HTTP status mapping, allowed ports. *You write it, starting from the proposals in `apps/backend/CLAUDE.md`.*
+  *Status:* accepted — `docs/adr/0002-safe-fetcher.md`.
 
-SafeFetcher is split into three tasks (rules in `apps/backend/CLAUDE.md` → "SafeFetcher"):
+SafeFetcher is split into three tasks (design in ADR 0002, rules summarised in `apps/backend/CLAUDE.md` → "SafeFetcher"):
 
-- [ ] **1.7 IP policy** — `fetcher/ip-policy.ts`, pure function `isAllowedAddress(ip)`; explicit range list with RFC comments; IPv4-mapped normalisation.
-  *Done when:* table-driven tests cover every blocked range, public IPv4/IPv6, IPv4-mapped forms and unparseable input.
-- [ ] **1.8 URL policy** — `fetcher/url-policy.ts`: scheme, credentials, default ports only, `localhost`/single-label hosts, IP literals checked with ip-policy; `fetcher.errors.ts` with the first typed errors.
+- [ ] **1.7 IP policy** — `fetcher/ip-policy.ts`, pure, fail-closed function `isAllowedAddress(ip)`; `ipaddr.js` for parsing and matching, but an explicit range table with RFC comments, built from the IANA IPv4/IPv6 Special-Purpose Address Registries (snapshot date in the file; every entry blocked, whether or not marked "globally reachable"), instead of trusting `range() === 'unicast'` alone. IPv4 allowed only if in no table range; IPv6 allowed only inside `2000::/3` and in no table range there; IPv4-mapped IPv6 checked as IPv4; 6to4, Teredo, NAT64 blocked; only canonical text accepted.
+  *Done when:* table-driven tests cover every table entry (first and last address plus a neighbouring public address), public IPv4/IPv6, IPv4-mapped and transition forms, non-canonical and unparseable input.
+- [ ] **1.8 URL policy** — `fetcher/url-policy.ts`: scheme, credentials, default ports only, `localhost`/`*.localhost`/single-label hosts, IP literals checked with ip-policy; `fetcher.errors.ts` with the first typed errors.
   *Done when:* table-driven tests pass, including `http://127.0.0.1`, `http://[::ffff:7f00:1]`, `http://169.254.169.254`.
-- [ ] **1.9 Safe HTTP client** — `fetcher/service/safe-fetcher.service.ts` + `fetcher/module/fetcher.module.ts`: undici Agent with checked `lookup`, manual redirects (max 5, each re-checked), whole-operation deadline, 5 MB decoded-size limit, HTML only, User-Agent, 4xx/5xx returned as results; exception filter for the typed errors.
-  *Done when:* tests with a real undici Agent and a fake resolver cover private address, DNS rebinding, mixed addresses, redirect to metadata/localhost, 6 redirects, > 5 MB (plain and gzip), slow body; a test proves the module wires the strict policy.
+- [ ] **1.9 Safe HTTP client** — `fetcher/service/safe-fetcher.service.ts` + `fetcher/module/fetcher.module.ts`: undici Agent with checked `lookup`, manual redirects (max 5, each re-checked), whole-operation deadline, 5 MB decoded-size limit, `text/html` only on the final 2xx page response (missing Content-Type rejected), per-call limits can only tighten (max 10 s / 5 MB; robots.txt 500 KiB), User-Agent, 4xx/5xx returned as results; exception filter at the API boundary with the ADR 0002 mapping (400/422/502/504) and error codes in `packages/shared`. The relaxed test policy exists only in test code.
+  *Done when:* tests with a real undici Agent and a fake resolver cover private address, DNS rebinding, mixed addresses, redirect to metadata/localhost, 6 redirects, > 5 MB (plain and gzip), slow body, missing and non-HTML Content-Type; a test proves the module wires the strict policy.
 - [ ] **1.10 Engine + first checks** — `Check` contract, engine service that parses once with cheerio; checks `title_presence`, `title_length`, `title_pixel_width`, `meta_description_presence`, `meta_description_length`, `h1_presence`, `h1_multiple` with fixtures for each status they return; `thresholds.ts` with sources.
   *Open decision before this task:* one check module may produce several granular results (e.g. `title.check.ts` → three CheckIds); adapt the single-`id` contract in `apps/backend/CLAUDE.md`.
   *Resolved in 1.5:* a check that could not run is `not_checked`, distinct from `fail`. `title_pixel_width` is an approximation (at most `warn`) and the first to defer if time runs short.
