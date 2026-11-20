@@ -1,45 +1,23 @@
-# 0001 — Monorepo and Technology Stack
+# NNNN — Decision title
 
-- **Status:** accepted
-- **Date:** 2026-11-19
+- **Status:** proposed | accepted | superseded by NNNN
+- **Date:** YYYY-MM-DD
 
 ## Context
 
-The SEO Audit Tool requires a backend to fetch and analyze web pages and a frontend to display SEO audit reports.
-
-Both applications need to share consistent data types and API contracts.
-
-As a solo developer building an MVP, I want an architecture that is easy to maintain, supports independent frontend and backend development, and provides opportunities to strengthen my technical skills.
+What problem or constraint forces a decision? Keep it to a few sentences.
 
 ## Decision
 
-We chose a TypeScript monorepo with npm workspaces, Next.js for the frontend, NestJS for the backend, and a shared package for TypeScript types and API contracts.
-
-**NestJS** was chosen to organize SEO audit logic into modular, testable services and to strengthen practical experience with Node.js and NestJS.
-
-**Next.js** was chosen to gain experience with a new React framework and because its server-side rendering and file-based routing are well suited to SEO-friendly pages and shareable audit reports.
-
-**Monorepo** was chosen to maintain a single source of truth for shared types and API contracts, and to centralize CI/CD workflows while allowing independent builds and deployments.
+What we chose, stated in one or two sentences.
 
 ## Alternatives considered
 
 | Option | Pros | Cons |
 |---|---|---|
-| Monorepo with npm workspaces | Shared types, centralized CI/CD, single repository | More complex code reviews when changes span multiple applications |
-| Separate repositories | Clearer boundaries and more focused pull requests | Duplicated configuration and additional effort to synchronize shared contracts |
-| NestJS backend | Modular architecture, dependency injection, testable services | Requires maintaining a separate backend application |
-| Next.js Route Handlers for APIs | Fewer applications to manage | Tighter coupling between frontend and backend, less opportunity to practice NestJS |
-| Next.js frontend | Server-side rendering, integrated routing, opportunity to learn a new framework | More framework complexity |
-| React with Vite | Familiar development environment, simple setup | Additional solutions needed for server-side rendering and routing |
+| A | | |
+| B | | |
 
 ## Consequences
 
-The monorepo allows frontend and backend to share TypeScript contracts and simplifies managing automated checks.
-
-NestJS provides a clear structure for implementing and testing the SEO audit logic, while Next.js supports server-rendered reports.
-
-However, maintaining two applications introduces additional configuration and deployment responsibilities.
-
-Changes affecting multiple packages can also make pull requests and code reviews more complex.
-
-As the project grows, we may need more targeted CI workflows and independent deployment processes.
+What becomes easier, what becomes harder, what we'll need to revisit.
