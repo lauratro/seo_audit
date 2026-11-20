@@ -41,3 +41,4 @@ export function normalizeUrl(input: string): string | null {
 
   return url.href;
 }
+//TODO: send error to frontend to communicate that the URL is invalid. This is a temporary solution until we have a better error handling mechanism in place.
