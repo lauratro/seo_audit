@@ -1,6 +1,6 @@
 # Implementation plan
 
-MVP = phases 1–3, from 2 to 29 November 2026 (~55 h). Each task is small enough for one Claude Code session and has an acceptance criterion. Tick a task only when lint, typecheck and tests are green and you have reviewed the diff.
+MVP = phases 1–3, from 16 November to 13 December 2026 (~55 h). Each task is small enough for one Claude Code session and has an acceptance criterion. Tick a task only when lint, typecheck and tests are green and you have reviewed the diff.
 
 Every week ends with something you can show in an interview.
 
@@ -8,7 +8,7 @@ Every week ends with something you can show in an interview.
 
 ---
 
-## Week 1 · 2–8 Nov · ~10 h — Foundations and safe fetching
+## Week 1 · 16–22 Nov · ~10 h — Foundations and safe fetching
 
 Demo at the end: CI is green, `POST /api/audits` returns the title/description/h1 check results for a real URL, and localhost is rejected.
 
@@ -40,7 +40,7 @@ SafeFetcher is split into three tasks (design in ADR 0002, rules summarised in `
 
 If week 1 runs long, 1.10 moves to the start of week 2 — don't shorten the SafeFetcher tests.
 
-## Week 2 · 9–15 Nov · 13–18 h — Complete engine and persistence (closes phase 1)
+## Week 2 · 23–29 Nov · 13–18 h — Complete engine and persistence (closes phase 1)
 
 Demo: a full audit with all 16 check results saved in PostgreSQL, retrievable by ID, cached for 24 h.
 
@@ -54,7 +54,7 @@ Demo: a full audit with all 16 check results saved in PostgreSQL, retrievable by
 - [ ] **2.7 Audits endpoints** — `POST` (201 / 200 cache / 400 / 429), `GET /:id`, `GET ?domain=`; Supertest e2e tests with mocked fetcher.
 - [ ] **2.8 Phase 1 check** — go through the week 1 and week 2 demos and every *Done when* in weeks 1–2 of this plan, and tick them.
 
-## Week 3 · 16–22 Nov · 13–18 h — Dashboard, performance, deploy (phase 2)
+## Week 3 · 30 Nov–6 Dec · 13–18 h — Dashboard, performance, deploy (phase 2)
 
 Demo: a live HTTPS link you can put in your CV.
 
@@ -68,7 +68,7 @@ Demo: a live HTTPS link you can put in your CV.
 - [ ] **3.7 AWS** — budget alert first, then RDS, container deploy, HTTPS, secrets out of the repo.
 - [ ] **3.8 Live link** in README, CV and LinkedIn.
 
-## Week 4 · 23–29 Nov · 13–18 h — AI Marketing Advisor (phase 3)
+## Week 4 · 7–13 Dec · 13–18 h — AI Marketing Advisor (phase 3)
 
 Demo: report with "AI suggestion" cards tied to measured findings; the 30-second pitch.
 
@@ -82,7 +82,7 @@ Demo: report with "AI suggestion" cards tied to measured findings; the 30-second
 
 ---
 
-## Backlog (after 29 Nov, phase 4 — do not start earlier)
+## Backlog (after 13 Dec, phase 4 — do not start earlier)
 
 Multi-page crawler · cross-page duplicates · job queue · PDF export · IT/DE reports · monitoring.
 

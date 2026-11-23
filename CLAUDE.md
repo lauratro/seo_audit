@@ -2,7 +2,7 @@
 
 Single-page technical SEO audit. A user submits a URL → the **audit engine** runs deterministic checks → **PageSpeed Insights** adds performance data → **Gemini** turns failing findings into prioritised, business-language recommendations. Each audit gets a public, shareable link. No user accounts.
 
-Portfolio project for a Full Stack Developer role. Hard deadline for the MVP (phases 1–3): **29 Nov 2026**.
+Portfolio project for a Full Stack Developer role. Hard deadline for the MVP (phases 1–3): **13 Dec 2026**.
 
 - Project documentation: this file, `apps/backend/CLAUDE.md`, `apps/frontend/CLAUDE.md`, `docs/implementation-plan.md` and the ADRs. There is no separate specification: anything these files don't cover is an open decision (see "How to work on a task").
 - Current plan and task list: `docs/implementation-plan.md`
@@ -85,6 +85,6 @@ npm exec -w apps/backend -- prisma migrate dev
 
 Don't edit existing ADRs unless asked. Never touch `.env` files or print secrets.
 
-## Out of scope before 29 Nov (backlog only)
+## Out of scope before 13 Dec (backlog only)
 
 Multi-page crawler, cross-page duplicate titles/descriptions, site link structure and orphan pages, scheduled monitoring and email notifications, competitor comparison, login/accounts/paid plans, job queue (BullMQ/Redis), PDF export, Italian/German report translations.
