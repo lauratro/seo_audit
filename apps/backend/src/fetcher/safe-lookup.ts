@@ -46,6 +46,9 @@ async function resolveAllowed(
   isAllowedAddress: (ip: string) => boolean,
   family: number | string | undefined,
 ): Promise<[ResolvedAddress, ...ResolvedAddress[]]> {
+  // Validated before DNS: an unsupported family fails without a lookup.
+  const wanted = toFamily(family);
+
   let answer: ResolvedAddress[];
   try {
     answer = await resolve(hostname);
@@ -59,7 +62,6 @@ async function resolveAllowed(
     throw new BlockedUrlError('address');
   }
 
-  const wanted = toFamily(family);
   const addresses = wanted
     ? answer.filter((entry) => entry.family === wanted)
     : answer;
@@ -71,14 +73,22 @@ async function resolveAllowed(
   return [first, ...rest];
 }
 
-/** Node passes 4, 6, 'IPv4', 'IPv6' or 0/undefined (any). */
+/**
+ * The family values dns.lookup supports: 0 or undefined (any family), 4, 6,
+ * and 'IPv4' / 'IPv6' for backward compatibility. net.connect passes any
+ * other value through unchanged, so it is rejected here instead of being
+ * read as "any family". It is a programming error, hence a RangeError.
+ */
 function toFamily(family: number | string | undefined): IpFamily | undefined {
+  if (family === undefined || family === 0) return undefined;
   if (family === 4 || family === 'IPv4') return 4;
   if (family === 6 || family === 'IPv6') return 6;
-  return undefined;
+  throw new RangeError(`Unsupported address family: ${String(family)}`);
 }
 
-function toDnsError(error: unknown): Error {
+function toDnsError(
+  error: unknown,
+): DomainNotFoundError | UpstreamUnreachableError {
   const code =
     error instanceof Error && 'code' in error ? String(error.code) : '';
   return NOT_FOUND_CODES.has(code)

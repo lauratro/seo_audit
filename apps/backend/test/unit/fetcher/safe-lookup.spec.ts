@@ -110,6 +110,38 @@ describe('createSafeLookup — allowed addresses', () => {
   });
 });
 
+describe('createSafeLookup — family option', () => {
+  // The values dns.lookup supports. net.connect turns 'IPv4' / 'IPv6' into
+  // 4 / 6 before calling lookup, but the lookup accepts both forms.
+  it.each<[LookupOptions['family'], ResolvedAddress[]]>([
+    [undefined, [PUBLIC_V6, PUBLIC_V4]],
+    [0, [PUBLIC_V6, PUBLIC_V4]],
+    [4, [PUBLIC_V4]],
+    ['IPv4', [PUBLIC_V4]],
+    [6, [PUBLIC_V6]],
+    ['IPv6', [PUBLIC_V6]],
+  ])('accepts family %s', async (family, expected) => {
+    const result = await runLookup([PUBLIC_V6, PUBLIC_V4], {
+      family,
+      all: true,
+    });
+    expect(result).toMatchObject({ addresses: expected, calls: 1 });
+  });
+
+  // net.connect passes these through unchanged; they must not mean "any".
+  it.each([[5], [-1], [Number.NaN], ['unknown']])(
+    'rejects unsupported family %s through the callback, without DNS',
+    async (family) => {
+      // Cast: the type forbids these values, but they can reach us at runtime.
+      const options = { family, all: true } as unknown as LookupOptions;
+      const result = await runLookup([PUBLIC_V4], options);
+      expect('error' in result && result.error).toBeInstanceOf(RangeError);
+      expect(result.calls).toBe(1);
+      expect(result.resolverCalls).toEqual([]);
+    },
+  );
+});
+
 describe('createSafeLookup — blocked addresses', () => {
   it.each([
     [[{ address: '10.0.0.1', family: 4 }], 'private IPv4'],
