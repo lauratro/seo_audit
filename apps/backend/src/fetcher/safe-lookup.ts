@@ -1,6 +1,6 @@
 import type { LookupFunction } from 'node:net';
 
-import type { ResolvedAddress, Resolver } from './fetch-policy.js';
+import type { IpFamily, ResolvedAddress, Resolver } from './fetch-policy.js';
 import {
   BlockedUrlError,
   DomainNotFoundError,
@@ -72,7 +72,7 @@ async function resolveAllowed(
 }
 
 /** Node passes 4, 6, 'IPv4', 'IPv6' or 0/undefined (any). */
-function toFamily(family: number | string | undefined): 4 | 6 | undefined {
+function toFamily(family: number | string | undefined): IpFamily | undefined {
   if (family === 4 || family === 'IPv4') return 4;
   if (family === 6 || family === 'IPv6') return 6;
   return undefined;

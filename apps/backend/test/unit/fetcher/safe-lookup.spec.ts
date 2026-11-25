@@ -179,6 +179,16 @@ describe('createSafeLookup — DNS failures', () => {
     },
   );
 
+  it('maps a resolver error without a DNS code (e.g. unexpected family) to UpstreamUnreachableError', async () => {
+    const original = new Error('Unexpected address family: 5');
+    const result = await runLookup(() => Promise.reject(original));
+    expect('error' in result && result.error).toBeInstanceOf(
+      UpstreamUnreachableError,
+    );
+    expect('error' in result && result.error.cause).toBe(original);
+    expect('error' in result && result.error.message).not.toContain('family');
+  });
+
   it('treats an empty answer as domain not found', async () => {
     const result = await runLookup([]);
     expect('error' in result && result.error).toBeInstanceOf(
