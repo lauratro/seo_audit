@@ -21,6 +21,7 @@
     "ipaddr.js": "^2.5.0",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.2",
+    "undici": "^8.13.1",
     "zod": "^4.6.7"
   },
   "devDependencies": {

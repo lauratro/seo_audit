@@ -19,6 +19,8 @@ test/
   unit/         mirrors src/, e.g. test/unit/fetcher/ip-policy.spec.ts
   e2e/          HTTP tests with Supertest, e.g. test/e2e/health.e2e.spec.ts
   fixtures/<checkId>/pass.html | warn.html | fail.html | info.html
+  support/      shared test helpers, never run as tests, e.g. test/support/fetcher-test-kit.ts
+                (the relaxed test-only fetch policy lives here, never in src/)
 ```
 
 Folder conventions inside a feature:
@@ -89,7 +91,7 @@ Every outbound request to a user-supplied URL — the page, each redirect hop, r
 - Body limit counted while streaming, **after decompression** (gzip, deflate, br): 5 MB for the page, 500 KiB for robots.txt. Never trust `Content-Length`. Unknown or stacked `Content-Encoding` is an error.
 - Only the final 2xx response of a page fetch must be `text/html`, checked from the headers before reading the body; a missing `Content-Type`, `application/xhtml+xml` and every other type are rejected. Redirect hops, non-2xx responses, robots.txt and link checks don't apply this rule.
 - Upstream 4xx/5xx are returned as results (status, headers, final URL, redirect chain), not thrown, whatever their Content-Type; for non-2xx the body is discarded.
-- User-Agent `SEOAuditBot/0.1 (+<project url>)` on every request.
+- User-Agent `SEOAuditTool/0.1 (+https://github.com/lauratro/seo_audit)` on every request (`USER_AGENT` in `safe-fetcher.service.ts`).
 - SafeFetcher throws typed errors (`BlockedUrlError`, `FetchTimeoutError`, `ResponseTooLargeError`, ...) and knows nothing about HTTP. An exception filter at the API boundary maps them (400 invalid/blocked · 422 not auditable · 502 unreachable · 504 timeout, see ADR 0002) to `{ statusCode, code, message }`, with error codes from `@seo-audit/shared`. Never leak internal IPs or stack traces.
 
 Testability: the IP and URL policies are pure functions with table-driven tests. Resolver and policy are injected: fetcher tests use a fake resolver with `.test` hostnames and a local server on `127.0.0.1`. A relaxed policy (loopback, any port) exists **only in test code**; `src/` exports none, no env variable (including `NODE_ENV`) or config can enable one, and a module test proves `FetcherModule` wires the strict policy. undici `MockAgent` bypasses `lookup`, so it is never used to test SSRF protection.
