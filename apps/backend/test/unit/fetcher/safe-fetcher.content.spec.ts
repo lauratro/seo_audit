@@ -223,6 +223,24 @@ describe('Content-Encoding', () => {
     };
     const error = await errorOf(fetcher.fetchPage(urlOf('/')));
     expect(error).toBeInstanceOf(UpstreamUnreachableError);
+    // The decoder's own error, not a connection error.
+    expect((error as Error).cause).not.toBeInstanceOf(errors.SocketError);
+  });
+
+  it('keeps a connection reset in a compressed body as the cause', async () => {
+    // Regression: pipeline destroys the decoder with the body's error, so
+    // the decoder "fails" too; the cause must still be the socket error.
+    replies['/'] = {
+      headers: { 'content-type': HTML, 'content-encoding': 'gzip' },
+      stream: (response) => {
+        response.write(gzipSync(PAGE).subarray(0, 10), () => {
+          response.socket?.destroy();
+        });
+      },
+    };
+    const error = await errorOf(fetcher.fetchPage(urlOf('/')));
+    expect(error).toBeInstanceOf(UpstreamUnreachableError);
+    expect((error as Error).cause).toBeInstanceOf(errors.SocketError);
   });
 });
 

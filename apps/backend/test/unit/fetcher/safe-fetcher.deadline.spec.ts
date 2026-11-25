@@ -1,4 +1,5 @@
 import type { ServerResponse } from 'node:http';
+import { constants, createGzip } from 'node:zlib';
 
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
@@ -66,6 +67,21 @@ beforeEach(async () => {
     if (url.pathname === '/drip') {
       response.writeHead(200, { 'content-type': 'text/html' });
       drip(response);
+      return;
+    }
+    // A gzip body that never ends: the timeout hits while decoding.
+    if (url.pathname === '/drip-gzip') {
+      response.writeHead(200, {
+        'content-type': 'text/html',
+        'content-encoding': 'gzip',
+      });
+      const gzip = createGzip({ flush: constants.Z_SYNC_FLUSH });
+      gzip.pipe(response);
+      const timer = setInterval(() => gzip.write('x'), 50);
+      response.on('close', () => {
+        clearInterval(timer);
+        gzip.destroy();
+      });
       return;
     }
     // /slow-hop/N waits 100 ms, then redirects to /slow-hop/N-1
@@ -156,6 +172,12 @@ describe('SafeFetcherService — the deadline covers the whole operation', () =>
 
   it('times out while reading a slow body', async () => {
     await expectTimeout('/drip');
+  });
+
+  it('times out while reading a slow compressed body', async () => {
+    // Regression: the abort also destroys the decoder, which must not turn
+    // the timeout into a decompression (unreachable) error.
+    await expectTimeout('/drip-gzip');
   });
 
   it('times out on a redirect chain that exceeds the total deadline', async () => {

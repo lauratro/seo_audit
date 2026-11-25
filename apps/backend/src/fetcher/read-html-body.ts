@@ -1,4 +1,4 @@
-import { Transform } from 'node:stream';
+import { type Transform, Writable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import { createBrotliDecompress, createGunzip, createInflate } from 'node:zlib';
 
@@ -60,8 +60,9 @@ export async function readHtmlBody(
 
   const chunks: Buffer[] = [];
   let total = 0;
-  const counter = new Transform({
-    transform(chunk: Buffer, _encoding, done) {
+  // The last stream of the pipeline: it counts and collects, it outputs nothing.
+  const counter = new Writable({
+    write(chunk: Buffer, _encoding, done) {
       total += chunk.length;
       if (total > maxBytes) {
         done(new ResponseTooLargeError());
@@ -73,10 +74,19 @@ export async function readHtmlBody(
   });
 
   const decoding = decoder?.() ?? null;
-  // Remember decoder errors, so a corrupt body is told apart from others.
+  // Remember an error the decoder raised itself (a corrupt body). pipeline
+  // destroys every stream with the first error, so after a body error
+  // (connection reset, timeout abort) the decoder emits that error too, and
+  // after a decoder error the body does. The stream that fails first wins.
+  let bodyFailed = false;
   let decoderError: unknown;
+  body.once('error', () => {
+    bodyFailed = true;
+  });
   decoding?.once('error', (error) => {
-    decoderError = error;
+    if (!bodyFailed) {
+      decoderError = error;
+    }
   });
 
   try {
